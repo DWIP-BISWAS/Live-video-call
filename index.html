@@ -1,28 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Live Cally</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Link to Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="main.css">
 </head>
 <body>
 
-    <button id="join-btn">Join Call</button>
+    <!-- Join Button -->
+    <button id="join-btn">
+        <i class="fas fa-video"></i> Join Call
+    </button>
 
+    <!-- Video Stream Wrapper -->
     <div id="stream-wrapper">
         <div id="video-streams"></div>
 
+        <!-- Stream Control Buttons -->
         <div id="stream-controls">
-            <button id="leave-btn">Leave Call</button>
-            <button id="mic-btn">Mic On</button>
-            <button id="camera-btn">Camera on</button>
+            <button id="leave-btn" class="control-btn">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <button id="mic-btn" class="control-btn">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button id="camera-btn" class="control-btn">
+                <i class="fas fa-video"></i>
+            </button>
         </div>
     </div>
-    
+
 </body>
-<!-- <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script> -->
+<!-- Agora SDK and JavaScript -->
 <script src="AgoraRTC_N-4.7.3.js"></script>
-<script src='main.js'></script>
+<script src="main.js"></script>
 </html>
