@@ -1,44 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Live Cally</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Link to Font Awesome for icons -->
+    <title>Zoom-like Video Call</title>
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- External CSS -->
-    <link rel="stylesheet" href="main.css">
+    <style>
+        /* General Styling */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #1c1e21;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #20232a;
+            padding: 10px 20px;
+        }
+
+        #room-info {
+            font-weight: bold;
+        }
+
+        /* Video Grid */
+        #video-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .video-container {
+            position: relative;
+            background: black;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+        }
+
+        .user-name {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            background: #20232a;
+            padding: 10px;
+            gap: 20px;
+        }
+
+        .controls button {
+            border: none;
+            background: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .controls button:hover {
+            color: #61dafb;
+        }
+
+        /* Room Join */
+        #form-container {
+            text-align: center;
+            margin: auto;
+        }
+
+        input {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #join-btn {
+            background-color: #0077FF;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #join-link {
+            color: #61dafb;
+            display: block;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
+    <!-- Header -->
+    <header>
+        <div>Zoom-like Video Call</div>
+        <div id="room-info"></div>
+    </header>
 
-    <!-- Join Button -->
-    <button id="join-btn">
-        <i class="fas fa-video"></i> Join Call
-    </button>
-
-    <!-- Video Stream Wrapper -->
-    <div id="stream-wrapper">
-        <div id="video-streams"></div>
-
-        <!-- Stream Control Buttons -->
-        <div id="stream-controls">
-            <button id="leave-btn" class="control-btn">
-                <i class="fas fa-phone-slash"></i>
-            </button>
-            <button id="mic-btn" class="control-btn">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <button id="camera-btn" class="control-btn">
-                <i class="fas fa-video"></i>
-            </button>
-        </div>
+    <!-- Room Input -->
+    <div id="form-container">
+        <input id="room-id" placeholder="Room ID" required>
+        <input id="username" placeholder="Username" required>
+        <button id="join-btn">Join Room</button>
+        <span id="join-link"></span>
     </div>
 
+    <!-- Video Grid -->
+    <div id="video-grid" style="display: none;"></div>
+
+    <!-- Controls -->
+    <div class="controls" id="controls" style="display: none;">
+        <button id="mic-btn" title="Toggle Mic"><i class="fas fa-microphone"></i></button>
+        <button id="camera-btn" title="Toggle Camera"><i class="fas fa-video"></i></button>
+        <button id="leave-btn" title="Leave Call"><i class="fas fa-phone-slash"></i></button>
+    </div>
+
+    <script>
+        const APP_ID = "40c6da96ab964b1698bac5cf59645398";
+        const TOKEN = "007eJxTYOidcc237APrU8aJ7LPXntgkdWJ/Y8GnOS/L01rdTnozhsxVYDAxSDZLSbQ0S0yyNDNJMjSztEhKTDZNTjMFck2NLS028iemNwQyMkz5qM7ACIUgPgtDbmJmHgMDAKFuIBY=";
+
+        let client, localTracks = [], remoteUsers = {};
+        let roomId, username;
+
+        document.getElementById('join-btn').addEventListener('click', async () => {
+            roomId = document.getElementById('room-id').value.trim();
+            username = document.getElementById('username').value.trim();
+
+            if (!roomId || !username) {
+                alert("Please enter a Room ID and Username");
+                return;
+            }
+
+            document.getElementById('form-container').style.display = 'none';
+            document.getElementById('video-grid').style.display = 'grid';
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('room-info').innerText = `Room: ${roomId}`;
+            document.getElementById('join-link').innerHTML = `Direct Link: <a href="?room=${roomId}" target="_blank">Join Room</a>`;
+
+            client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+            await client.join(APP_ID, roomId, TOKEN);
+
+            localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+
+            const container = createVideoContainer("local-user", username);
+            document.getElementById('video-grid').appendChild(container);
+            localTracks[1].play("local-user");
+
+            await client.publish(localTracks);
+
+            client.on("user-published", handleUserJoined);
+            client.on("user-left", handleUserLeft);
+        });
+
+        function createVideoContainer(id, name) {
+            const container = document.createElement('div');
+            container.className = "video-container";
+            container.id = id;
+
+            const videoName = document.createElement('div');
+            videoName.className = "user-name";
+            videoName.innerText = name;
+
+            container.appendChild(videoName);
+            return container;
+        }
+
+        async function handleUserJoined(user, mediaType) {
+            await client.subscribe(user, mediaType);
+
+            if (mediaType === "video") {
+                const container = createVideoContainer(`user-${user.uid}`, `User ${user.uid}`);
+                document.getElementById('video-grid').appendChild(container);
+                user.videoTrack.play(`user-${user.uid}`);
+            }
+        }
+
+        function handleUserLeft(user) {
+            document.getElementById(`user-${user.uid}`).remove();
+        }
+
+        document.getElementById('mic-btn').addEventListener('click', () => {
+            localTracks[0].setMuted(!localTracks[0].muted);
+        });
+
+        document.getElementById('camera-btn').addEventListener('click', () => {
+            localTracks[1].setMuted(!localTracks[1].muted);
+        });
+
+        document.getElementById('leave-btn').addEventListener('click', async () => {
+            for (let track of localTracks) {
+                track.stop();
+                track.close();
+            }
+            await client.leave();
+            window.location.reload();
+        });
+    </script>
 </body>
-<!-- Agora SDK and JavaScript -->
-<script src="AgoraRTC_N-4.7.3.js"></script>
-<script src="main.js"></script>
-</html>
+        </html>
+                                           
